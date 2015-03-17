@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type Client struct {
@@ -18,12 +19,13 @@ func NewClient(uaaUrl string) Client {
 }
 
 func (client Client) GetAuthToken(username, password string) (string, error) {
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/oauth/token", client.uaaUrl), nil)
+	data := url.Values{"client_id": {username}, "grant_type": {"client_credentials"}}
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/oauth/token", client.uaaUrl), strings.NewReader(data.Encode()))
 	if err != nil {
 		return "", err
 	}
-	request.Form = url.Values{"client_id": {username}, "grant_type": {"client_credentials"}}
 	request.SetBasicAuth(username, password)
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil {

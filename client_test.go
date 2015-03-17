@@ -15,7 +15,7 @@ var _ = Describe("Client", func() {
 		var testServer *httptest.Server
 		BeforeEach(func() {
 			testServer = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-				if request.Method == "POST" && request.URL.Path == "/oauth/token" {
+				if validRequest(request) {
 					authValue := request.Header.Get("Authorization")
 					authValueBytes := "Basic " + base64.StdEncoding.EncodeToString([]byte("myusername:mypassword"))
 					if authValueBytes == authValue {
@@ -46,3 +46,14 @@ var _ = Describe("Client", func() {
 		})
 	})
 })
+
+func validRequest(request *http.Request) bool {
+	isPost := request.Method == "POST"
+	correctPath := request.URL.Path == "/oauth/token"
+	correctType := request.Header.Get("content-type") == "application/x-www-form-urlencoded"
+	request.ParseForm()
+	hasClientId := len(request.PostForm.Get("client_id")) > 0
+	hasGrantType := len(request.PostForm.Get("grant_type")) > 0
+
+	return isPost && correctPath && correctType && hasClientId && hasGrantType
+}
