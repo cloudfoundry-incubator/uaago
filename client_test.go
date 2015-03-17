@@ -1,0 +1,48 @@
+package uaago_test
+
+import (
+	"encoding/base64"
+	"net/http"
+	"net/http/httptest"
+
+	"github.com/cloudfoundry/uaago"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("Client", func() {
+	Context("GetOauthToken", func() {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				if request.Method == "POST" && request.URL.Path == "/oauth/token" {
+					authValue := request.Header.Get("Authorization")
+					authValueBytes := "Basic " + base64.StdEncoding.EncodeToString([]byte("myusername:mypassword"))
+					if authValueBytes == authValue {
+						jsonData := []byte(`
+						{
+							"access_token":"good-token",
+							"token_type":"bearer",
+							"expires_in":599,
+							"scope":"cloud_controller.write doppler.firehose",
+							"jti":"28edda5c-4e37-4a63-9ba3-b32f48530a51"
+						}
+						`)
+						writer.Write(jsonData)
+						return
+					}
+				}
+				writer.WriteHeader(http.StatusUnauthorized)
+			}))
+		})
+		AfterEach(func() {
+			testServer.Close()
+		})
+		It("Should get a valid oauth token from the given UAA", func() {
+			client := uaago.NewClient(testServer.URL)
+			token, err := client.GetAuthToken("myusername", "mypassword")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(token).To(Equal("bearer good-token"))
+		})
+	})
+})
