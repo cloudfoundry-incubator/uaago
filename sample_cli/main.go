@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/cloudfoundry/uaago"
+	"github.com/cloudfoundry-incubator/uaago"
 )
 
 func main() {
