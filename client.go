@@ -1,12 +1,12 @@
 package uaago
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
-    "crypto/tls"
 )
 
 type Client struct {
@@ -19,7 +19,7 @@ func NewClient(uaaUrl string) Client {
 	}
 }
 
-func (client Client) GetAuthToken(username, password string, insecureSkipVerify bool ) (string, error) {
+func (client Client) GetAuthToken(username, password string, insecureSkipVerify bool) (string, error) {
 	data := url.Values{"client_id": {username}, "grant_type": {"client_credentials"}}
 
 	request, err := http.NewRequest("POST", fmt.Sprintf("%s/oauth/token", client.uaaUrl), strings.NewReader(data.Encode()))
@@ -29,12 +29,11 @@ func (client Client) GetAuthToken(username, password string, insecureSkipVerify 
 	request.SetBasicAuth(username, password)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-    config := &tls.Config{InsecureSkipVerify: insecureSkipVerify}
-    tr := &http.Transport{ TLSClientConfig: config }
-    httpClient := &http.Client{Transport: tr}
+	config := &tls.Config{InsecureSkipVerify: insecureSkipVerify}
+	tr := &http.Transport{TLSClientConfig: config}
+	httpClient := &http.Client{Transport: tr}
 
-
-    resp, err := httpClient.Do(request)
+	resp, err := httpClient.Do(request)
 	if err != nil {
 		return "", err
 	}
