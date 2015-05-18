@@ -40,7 +40,9 @@ var _ = Describe("Client", func() {
 				testServer.Close()
 			})
 			It("Should get a valid oauth token from the given UAA", func() {
-				client := uaago.NewClient(testServer.URL)
+				client, err := uaago.NewClient(testServer.URL)
+				Expect(err).ToNot(HaveOccurred())
+
 				token, err := client.GetAuthToken("myusername", "mypassword", false)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(token).To(Equal("bearer good-token"))
@@ -75,7 +77,9 @@ var _ = Describe("Client", func() {
 				testServer.Close()
 			})
 			It("Should get a valid oauth token from the given UAA", func() {
-				client := uaago.NewClient(testServer.URL)
+				client, err := uaago.NewClient(testServer.URL)
+				Expect(err).ToNot(HaveOccurred())
+
 				token, err := client.GetAuthToken("myusername", "mypassword", true)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(token).To(Equal("bearer good-token"))
