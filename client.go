@@ -1,40 +1,51 @@
 package uaago
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
-    "crypto/tls"
 )
 
 type Client struct {
-	uaaUrl string
+	uaaUrl *url.URL
 }
 
-func NewClient(uaaUrl string) Client {
-	return Client{
-		uaaUrl: uaaUrl,
+func NewClient(uaaUrl string) (*Client, error) {
+	if len(uaaUrl) == 0 {
+		return nil, fmt.Errorf("client: missing url")
 	}
+
+	parsedURL, err := url.Parse(uaaUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		uaaUrl: parsedURL,
+	}, nil
 }
 
-func (client Client) GetAuthToken(username, password string, insecureSkipVerify bool ) (string, error) {
-	data := url.Values{"client_id": {username}, "grant_type": {"client_credentials"}}
+func (c *Client) GetAuthToken(username, password string, insecureSkipVerify bool) (string, error) {
+	data := url.Values{
+		"client_id":  {username},
+		"grant_type": {"client_credentials"},
+	}
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/oauth/token", client.uaaUrl), strings.NewReader(data.Encode()))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/oauth/token", c.uaaUrl), strings.NewReader(data.Encode()))
 	if err != nil {
 		return "", err
 	}
 	request.SetBasicAuth(username, password)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-    config := &tls.Config{InsecureSkipVerify: insecureSkipVerify}
-    tr := &http.Transport{ TLSClientConfig: config }
-    httpClient := &http.Client{Transport: tr}
+	config := &tls.Config{InsecureSkipVerify: insecureSkipVerify}
+	tr := &http.Transport{TLSClientConfig: config}
+	httpClient := &http.Client{Transport: tr}
 
-
-    resp, err := httpClient.Do(request)
+	resp, err := httpClient.Do(request)
 	if err != nil {
 		return "", err
 	}
