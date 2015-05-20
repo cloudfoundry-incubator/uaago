@@ -8,10 +8,10 @@ import (
 )
 
 func main() {
-	os.Exit(_main(os.Args))
+	os.Exit(run(os.Args))
 }
 
-func _main(args []string) int {
+func run(args []string) int {
 	if len(args[1:]) != 3 {
 		fmt.Fprintf(os.Stderr, "Usage %s [URL] [USERNAME] [PASS]", args[0])
 		return 1
