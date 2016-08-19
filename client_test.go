@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"io/ioutil"
+
 	"github.com/cloudfoundry-incubator/uaago"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
 )
 
 type request struct {
@@ -252,6 +253,9 @@ var _ = Describe("Client", func() {
 			uaaRequests       = make(chan *request, 10)
 			uaaResponseBodies = make(chan string, 10)
 			client            *uaago.Client
+
+			basicAuthUser = "some-basic-auth-user"
+			basicAuthPass = "some-basic-auth-pass"
 		)
 
 		BeforeEach(func() {
@@ -272,7 +276,7 @@ var _ = Describe("Client", func() {
 
 		It("talks to UAA", func() {
 			uaaResponseBodies <- "some client_id"
-			client.TokenIsAuthorized("some token", "some client_id")
+			client.TokenIsAuthorized(basicAuthUser, basicAuthPass, "some token", "some client_id")
 			var req *request
 			Eventually(uaaRequests).Should(Receive(&req))
 
@@ -280,12 +284,17 @@ var _ = Describe("Client", func() {
 			Expect(req.Request.URL).To(ContainSubstring("/check_token"))
 
 			Expect(string(req.Body)).To(ContainSubstring("some token"))
+
+			authUser, authPass, ok := req.Request.BasicAuth()
+			Expect(ok).To(BeTrue())
+			Expect(authUser).To(Equal(basicAuthUser))
+			Expect(authPass).To(Equal(basicAuthPass))
 		})
 
 		Context("valid: client_id=ingestor", func() {
 			It("returns true", func() {
 				uaaResponseBodies <- "ingestor"
-				isValid := client.TokenIsAuthorized("some token", "ingestor")
+				isValid := client.TokenIsAuthorized(basicAuthUser, basicAuthPass, "some token", "ingestor")
 
 				Expect(isValid).To(BeTrue())
 			})
@@ -294,7 +303,7 @@ var _ = Describe("Client", func() {
 		Context("invalid: client_id=foo", func() {
 			It("returns false", func() {
 				uaaResponseBodies <- "foo"
-				isValid := client.TokenIsAuthorized("some token", "ingestor")
+				isValid := client.TokenIsAuthorized(basicAuthUser, basicAuthPass, "some token", "ingestor")
 
 				Expect(isValid).To(BeFalse())
 			})
