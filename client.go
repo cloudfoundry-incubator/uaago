@@ -105,6 +105,6 @@ func (c *Client) TokenIsAuthorized(username, password, token, client_id string, 
 
 func (c *Client) httpClient(insecureSkipVerify bool) *http.Client {
 	config := &tls.Config{InsecureSkipVerify: insecureSkipVerify}
-	tr := &http.Transport{TLSClientConfig: config}
+	tr := &http.Transport{TLSClientConfig: config, Proxy: http.ProxyFromEnvironment}
 	return &http.Client{Transport: tr}
 }
