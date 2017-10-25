@@ -56,7 +56,8 @@ func (c *Client) GetAuthTokenWithExpiresIn(username, password string, insecureSk
 	if resp.StatusCode != http.StatusOK {
 		return "", -1, fmt.Errorf("Received a status code %v", resp.Status)
 	}
-
+	defer resp.Body.Close()
+	
 	jsonData := make(map[string]interface{})
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&jsonData)
