@@ -326,10 +326,6 @@ var _ = Describe("Client", func() {
 	Context("GetRefreshToken", func() {
 		Context("with http", func() {
 			var testServer *httptest.Server
-			// BeforeEach(func() {
-			// })
-			// AfterEach(func() {
-			// })
 			It("should get a valid refresh token from the given UAA", func() {
 				testServer = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 					if validRequest(request) {
