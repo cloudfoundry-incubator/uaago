@@ -105,6 +105,42 @@ func (c *Client) TokenIsAuthorized(username, password, token, client_id string, 
 	return false, nil
 }
 
+func (c *Client) GetRefreshToken(client_id, refreshToken string, insecureSkipVerify bool) (string, error) {
+	data := url.Values{
+		"client_id":     {client_id},
+		"grant_type":    {"refresh_token"},
+		"refresh_token": {refreshToken},
+	}
+
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/oauth/token", c.uaaUrl), strings.NewReader(data.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("Unable to create request: %s", err)
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := c.httpClient(insecureSkipVerify).Do(request)
+	if err != nil {
+		return "", fmt.Errorf("Unable to make request: %s", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Unexpected status code: %d", resp.StatusCode)
+	}
+
+	jsonData := make(map[string]interface{})
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&jsonData)
+	if err != nil {
+		return "", fmt.Errorf("Unable to decode json data: %s", err)
+	}
+
+	token, ok := jsonData["refresh_token"]
+	if !ok {
+		return "", fmt.Errorf("Missing refresh_token in response body")
+	}
+
+	return fmt.Sprintf("%s", token), nil
+}
+
 func (c *Client) httpClient(insecureSkipVerify bool) *http.Client {
 	config := &tls.Config{InsecureSkipVerify: insecureSkipVerify}
 	tr := &http.Transport{TLSClientConfig: config, Proxy: http.ProxyFromEnvironment}
