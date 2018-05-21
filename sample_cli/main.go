@@ -2,33 +2,28 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/cloudfoundry-incubator/uaago"
 )
 
 func main() {
-	os.Exit(run(os.Args))
-}
+	log := log.New(os.Stderr, "", 0)
 
-func run(args []string) int {
-	if len(args[1:]) != 3 {
-		fmt.Fprintf(os.Stderr, "Usage %s [URL] [USERNAME] [PASS]", args[0])
-		return 1
+	if len(os.Args[1:]) != 3 {
+		log.Fatalf("Usage %s [URL] [USERNAME] [PASS]", os.Args[0])
 	}
 
-	uaa, err := uaago.NewClient(args[1])
+	uaa, err := uaago.NewClient(os.Args[1])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create client: %s", err.Error())
-		return 1
+		log.Fatalf("Failed to create client: %s", err.Error())
 	}
 
-	token, err := uaa.GetAuthToken(args[2], args[3], false)
+	token, err := uaa.GetAuthToken(os.Args[2], os.Args[3], false)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Faild to get auth token: %s", err.Error())
-		return 1
+		log.Fatalf("Faild to get auth token: %s", err.Error())
 	}
 
-	fmt.Fprintf(os.Stdout, "TOKEN: %s\n", token)
-	return 0
+	fmt.Println(token)
 }
