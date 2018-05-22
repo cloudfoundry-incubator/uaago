@@ -326,7 +326,7 @@ var _ = Describe("Client", func() {
 	Context("GetRefreshToken", func() {
 		Context("with http", func() {
 			var testServer *httptest.Server
-			It("should get a valid refresh token from the given UAA", func() {
+			It("should get a valid refresh and access token from the given UAA", func() {
 				testServer = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 					if validRequest(request) {
 						Expect(request.PostForm.Get("refresh_token")).To(Equal("bearer refresh-token"))
@@ -334,10 +334,10 @@ var _ = Describe("Client", func() {
 						Expect(request.PostForm.Get("grant_type")).To(Equal("refresh_token"))
 						jsonData := []byte(`
 						{
-							"access_token":"good-token",
+							"access_token":"some-access-token",
 							"token_type":"bearer",
 							"refresh_token" : "some-new-token-r",
-						    "expires_in" : 43199,
+							"expires_in" : 43199,
 							"scope":"cloud_controller.write doppler.firehose",
 							"jti":"28edda5c-4e37-4a63-9ba3-b32f48530a51"
 						}
@@ -350,9 +350,10 @@ var _ = Describe("Client", func() {
 				client, err := uaago.NewClient(testServer.URL)
 				Expect(err).ToNot(HaveOccurred())
 
-				token, err := client.GetRefreshToken("some-client-id", "bearer refresh-token", false)
+				refreshToken, accessToken, err := client.GetRefreshToken("some-client-id", "bearer refresh-token", false)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(token).To(Equal("some-new-token-r"))
+				Expect(refreshToken).To(Equal("some-new-token-r"))
+				Expect(accessToken).To(Equal("some-access-token"))
 
 				testServer.Close()
 			})
@@ -364,7 +365,7 @@ var _ = Describe("Client", func() {
 				client, _ := uaago.NewClient(unauthServer.URL)
 				defer unauthServer.Close()
 
-				_, err := client.GetRefreshToken("some-client-id", "invalid-token", false)
+				_, _, err := client.GetRefreshToken("some-client-id", "invalid-token", false)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -374,7 +375,7 @@ var _ = Describe("Client", func() {
 						{
 							"access_token":"good-token",
 							"token_type":"bearer",
-						    "expires_in" : 43199,
+							"expires_in" : 43199,
 							"scope":"cloud_controller.write doppler.firehose",
 							"jti":"28edda5c-4e37-4a63-9ba3-b32f48530a51"
 						}
@@ -385,14 +386,35 @@ var _ = Describe("Client", func() {
 				client, err := uaago.NewClient(testServer.URL)
 				Expect(err).ToNot(HaveOccurred())
 
-				_, err = client.GetRefreshToken("some-client-id", "bearer refresh-token", false)
+				_, _, err = client.GetRefreshToken("some-client-id", "bearer refresh-token", false)
 				Expect(err).To(MatchError("Missing refresh_token in response body"))
+			})
+
+			It("should return an error if access_token is not populated", func() {
+				testServer = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+					jsonData := []byte(`
+						{
+							"token_type":"bearer",
+							"refresh_token" : "some-new-token-r",
+							"expires_in" : 43199,
+							"scope":"cloud_controller.write doppler.firehose",
+							"jti":"28edda5c-4e37-4a63-9ba3-b32f48530a51"
+						}
+						`)
+					writer.Write(jsonData)
+				}))
+
+				client, err := uaago.NewClient(testServer.URL)
+				Expect(err).ToNot(HaveOccurred())
+
+				_, _, err = client.GetRefreshToken("some-client-id", "bearer refresh-token", false)
+				Expect(err).To(MatchError("Missing access_token in response body"))
 			})
 		})
 
 		Context("with https", func() {
 			var testServer *httptest.Server
-			It("Should get a valid refresh token from the given UAA", func() {
+			It("should get a valid refresh and access token from the given UAA", func() {
 				testServer = httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 					if validRequest(request) {
 						Expect(request.PostForm.Get("refresh_token")).To(Equal("bearer refresh-token"))
@@ -400,10 +422,10 @@ var _ = Describe("Client", func() {
 						Expect(request.PostForm.Get("grant_type")).To(Equal("refresh_token"))
 						jsonData := []byte(`
 						{
-							"access_token":"good-token",
+							"access_token":"some-access-token",
 							"token_type":"bearer",
 							"refresh_token" : "some-new-token-r",
-						    "expires_in" : 43199,
+							"expires_in" : 43199,
 							"scope":"cloud_controller.write doppler.firehose",
 							"jti":"28edda5c-4e37-4a63-9ba3-b32f48530a51"
 						}
@@ -416,9 +438,10 @@ var _ = Describe("Client", func() {
 				client, err := uaago.NewClient(testServer.URL)
 				Expect(err).ToNot(HaveOccurred())
 
-				token, err := client.GetRefreshToken("some-client-id", "bearer refresh-token", true)
+				refreshToken, accessToken, err := client.GetRefreshToken("some-client-id", "bearer refresh-token", true)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(token).To(Equal("some-new-token-r"))
+				Expect(refreshToken).To(Equal("some-new-token-r"))
+				Expect(accessToken).To(Equal("some-access-token"))
 
 				testServer.Close()
 			})
@@ -430,7 +453,7 @@ var _ = Describe("Client", func() {
 				client, _ := uaago.NewClient(unauthServer.URL)
 				defer unauthServer.Close()
 
-				_, err := client.GetRefreshToken("some-client-id", "invalid-token", true)
+				_, _, err := client.GetRefreshToken("some-client-id", "invalid-token", true)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -440,7 +463,7 @@ var _ = Describe("Client", func() {
 						{
 							"access_token":"good-token",
 							"token_type":"bearer",
-						    "expires_in" : 43199,
+							"expires_in" : 43199,
 							"scope":"cloud_controller.write doppler.firehose",
 							"jti":"28edda5c-4e37-4a63-9ba3-b32f48530a51"
 						}
@@ -451,8 +474,29 @@ var _ = Describe("Client", func() {
 				client, err := uaago.NewClient(testServer.URL)
 				Expect(err).ToNot(HaveOccurred())
 
-				_, err = client.GetRefreshToken("some-client-id", "bearer refresh-token", true)
+				_, _, err = client.GetRefreshToken("some-client-id", "bearer refresh-token", true)
 				Expect(err).To(MatchError("Missing refresh_token in response body"))
+			})
+
+			It("should return an error if access_token is not populated", func() {
+				testServer = httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+					jsonData := []byte(`
+						{
+							"token_type":"bearer",
+							"refresh_token" : "some-new-token-r",
+							"expires_in" : 43199,
+							"scope":"cloud_controller.write doppler.firehose",
+							"jti":"28edda5c-4e37-4a63-9ba3-b32f48530a51"
+						}
+						`)
+					writer.Write(jsonData)
+				}))
+
+				client, err := uaago.NewClient(testServer.URL)
+				Expect(err).ToNot(HaveOccurred())
+
+				_, _, err = client.GetRefreshToken("some-client-id", "bearer refresh-token", true)
+				Expect(err).To(MatchError("Missing access_token in response body"))
 			})
 		})
 	})

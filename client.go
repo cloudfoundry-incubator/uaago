@@ -105,40 +105,48 @@ func (c *Client) TokenIsAuthorized(username, password, token, client_id string, 
 	return false, nil
 }
 
-func (c *Client) GetRefreshToken(client_id, refreshToken string, insecureSkipVerify bool) (string, error) {
+func (c *Client) GetRefreshToken(clientID, refreshToken string, insecureSkipVerify bool) (string, string, error) {
 	data := url.Values{
-		"client_id":     {client_id},
+		"client_id":     {clientID},
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {refreshToken},
 	}
 
 	request, err := http.NewRequest("POST", fmt.Sprintf("%s/oauth/token", c.uaaUrl), strings.NewReader(data.Encode()))
 	if err != nil {
-		return "", fmt.Errorf("Unable to create request: %s", err)
+		return "", "", fmt.Errorf("Unable to create request: %s", err)
 	}
+	request.SetBasicAuth(clientID, "")
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set("Accept", "application/json")
 
 	resp, err := c.httpClient(insecureSkipVerify).Do(request)
 	if err != nil {
-		return "", fmt.Errorf("Unable to make request: %s", err)
+		return "", "", fmt.Errorf("Unable to make request: %s", err)
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Unexpected status code: %d", resp.StatusCode)
+		return "", "", fmt.Errorf("Unexpected status code: %d", resp.StatusCode)
 	}
 
 	jsonData := make(map[string]interface{})
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&jsonData)
 	if err != nil {
-		return "", fmt.Errorf("Unable to decode json data: %s", err)
+		return "", "", fmt.Errorf("Unable to decode json data: %s", err)
 	}
 
-	token, ok := jsonData["refresh_token"]
+	newRefreshToken, ok := jsonData["refresh_token"]
 	if !ok {
-		return "", fmt.Errorf("Missing refresh_token in response body")
+		return "", "", fmt.Errorf("Missing refresh_token in response body")
 	}
 
-	return fmt.Sprintf("%s", token), nil
+	accessToken, ok := jsonData["access_token"]
+	if !ok {
+		return "", "", fmt.Errorf("Missing access_token in response body")
+	}
+	return fmt.Sprintf("%s", newRefreshToken), fmt.Sprintf("%s", accessToken), nil
 }
 
 func (c *Client) httpClient(insecureSkipVerify bool) *http.Client {
