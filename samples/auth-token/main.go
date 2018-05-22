@@ -13,19 +13,19 @@ func main() {
 
 func run(args []string) int {
 	if len(args[1:]) != 3 {
-		fmt.Fprintf(os.Stderr, "Usage %s [URL] [USERNAME] [PASS]", args[0])
+		fmt.Fprintf(os.Stderr, "Usage %s [URL] [USERNAME] [PASS]\n", args[0])
 		return 1
 	}
 
 	uaa, err := uaago.NewClient(args[1])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create client: %s", err.Error())
+		fmt.Fprintf(os.Stderr, "Failed to create client: %s\n", err.Error())
 		return 1
 	}
 
 	token, err := uaa.GetAuthToken(args[2], args[3], false)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Faild to get auth token: %s", err.Error())
+		fmt.Fprintf(os.Stderr, "Failed to get auth token: %s\n", err.Error())
 		return 1
 	}
 
