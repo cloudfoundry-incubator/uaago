@@ -142,11 +142,17 @@ func (c *Client) GetRefreshToken(clientID, refreshToken string, insecureSkipVeri
 		return "", "", fmt.Errorf("Missing refresh_token in response body")
 	}
 
+	tokenType, ok := jsonData["token_type"]
+	if !ok {
+		return "", "", fmt.Errorf("Missing token_type in response body")
+	}
+
 	accessToken, ok := jsonData["access_token"]
 	if !ok {
 		return "", "", fmt.Errorf("Missing access_token in response body")
 	}
-	return fmt.Sprintf("%s", newRefreshToken), fmt.Sprintf("%s", accessToken), nil
+
+	return fmt.Sprintf("%s", newRefreshToken), fmt.Sprintf("%s %s", tokenType, accessToken), nil
 }
 
 func (c *Client) httpClient(insecureSkipVerify bool) *http.Client {
